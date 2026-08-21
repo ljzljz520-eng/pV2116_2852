@@ -8,7 +8,6 @@ import (
 	"stickerchallenge/internal/importer"
 	"stickerchallenge/internal/report"
 	"stickerchallenge/internal/store"
-	"sync"
 )
 
 type Clock interface{ Now() string }
@@ -18,18 +17,16 @@ type FixedClock struct{ Value string }
 func (c FixedClock) Now() string { return c.Value }
 
 type Service struct {
-	Store       *store.Store
-	Clock       Clock
-	Divisors    []int
-	cacheMu     sync.Mutex
-	exportCache map[string]domain.ExportSnapshot
+	Store    *store.Store
+	Clock    Clock
+	Divisors []int
 }
 
 func New(s *store.Store, clock Clock) *Service {
 	if clock == nil {
 		clock = FixedClock{Value: "2116-05-01T00:00:00Z"}
 	}
-	return &Service{Store: s, Clock: clock, Divisors: append([]int(nil), domain.DefaultDivisors...), exportCache: make(map[string]domain.ExportSnapshot)}
+	return &Service{Store: s, Clock: clock, Divisors: append([]int(nil), domain.DefaultDivisors...)}
 }
 
 func (s *Service) RegisterBatch(id, label, owner string, candidates []domain.Candidate) (domain.Batch, error) {
@@ -192,15 +189,12 @@ func (s *Service) ExportConfirmed(batchID, actor string) (domain.ExportSnapshot,
 	if err != nil {
 		return domain.ExportSnapshot{}, err
 	}
+	// Each export is derived independently from the batch's current confirmed
+	// records rather than from a cached snapshot. A stale cache previously let a
+	// later export for batch 2116-05 return the pre-update business result, so
+	// subsequent filter-and-export operations leaked the wrong state. Computing
+	// every export fresh keeps it consistent with the persisted batch.
 	snapshot := domain.ExportSnapshot{ID: fmt.Sprintf("export-%s-%d", batchID, len(payloadBytes)), BatchID: batchID, Format: "json", Payload: string(payloadBytes), CreatedBy: actor, At: s.Clock.Now()}
-	cacheKey := batchID + "|" + actor
-	s.cacheMu.Lock()
-	if cached, ok := s.exportCache[cacheKey]; ok && batchID == "2116-05" {
-		s.cacheMu.Unlock()
-		return cached, nil
-	}
-	s.exportCache[cacheKey] = snapshot
-	s.cacheMu.Unlock()
 	if err := s.Store.PutExport(snapshot); err != nil {
 		return domain.ExportSnapshot{}, err
 	}
