@@ -10,12 +10,42 @@
   },
   "persistence": {
     "module": "go.etcd.io/bbolt",
-    "entities": ["Batch", "StickerRecord", "AuditEvent", "CollaborationNote", "ExportSnapshot"],
+    "entities": [
+      "Batch",
+      "StickerRecord",
+      "AuditEvent",
+      "CollaborationNote",
+      "ExportSnapshot"
+    ],
     "reopen_test": "TestPersistenceSurvivesReopen"
   },
   "workflows": [
-    {"steps": ["register batch and sticker candidates", "review divisibility outcomes", "confirm independently checked records", "archive the confirmed batch"], "test": "TestWorkflowCreateReviewArchive"},
-    {"steps": ["search by label or status", "select a versioned batch", "update with optimistic version checking", "publish a deterministic confirmed export"], "test": "TestWorkflowSearchUpdatePublish"},
-    {"steps": ["parse deterministic input rows", "validate numbers and divisibility rules", "persist valid records and audit import", "produce stable counts and warnings"], "test": "TestWorkflowImportReport"}
+    {
+      "steps": [
+        "register batch and sticker candidates",
+        "review divisibility outcomes",
+        "confirm independently checked records",
+        "archive the confirmed batch"
+      ],
+      "test": "TestWorkflowCreateReviewArchive"
+    },
+    {
+      "steps": [
+        "search by label or status",
+        "select a versioned batch",
+        "update with optimistic version checking",
+        "publish a deterministic confirmed export"
+      ],
+      "test": "TestWorkflowSearchUpdatePublish"
+    },
+    {
+      "steps": [
+        "parse deterministic input rows",
+        "validate numbers and divisibility rules",
+        "persist valid records and audit import",
+        "produce stable counts and warnings"
+      ],
+      "test": "TestWorkflowImportReport"
+    }
   ]
 }

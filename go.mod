@@ -1,6 +1,6 @@
 module stickerchallenge
 
-go 1.26.6
+go 1.26.3
 
 require go.etcd.io/bbolt v1.3.11
 
